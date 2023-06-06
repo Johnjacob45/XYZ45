@@ -1,0 +1,82 @@
+%macro READ 2
+	mov rax,0
+	mov rdi,0
+	mov rsi,%1
+	mov rdx,%2
+	syscall
+%endmacro
+%macro WRITE 2
+	mov rax,1
+	mov rdi,1
+	mov rsi,%1
+	mov rdx,%2
+	syscall
+%endmacro
+section .data
+	msg3 db "Enter the HEX number",10
+	len3 equ $-msg3
+	msg4 db "The BCD Equivalant : ",10
+	len4 equ $-msg4
+
+section .bss
+	char_buff resb 17
+	len resq 1
+	choice resb 2
+	ans resq 1
+	char resb 1
+	cnt resb 1
+section .text
+global _start
+_start:
+	hextobcd:
+		WRITE msg3,len3
+		READ char_buff,17
+		dec rax
+		mov [len],rax
+		mov rcx,[len]
+		call accept
+		mov rcx,00
+		mov rax,rbx
+		
+		l1:
+		mov rdx,00
+		mov rbx,0AH
+		div rbx
+		push rdx
+		inc rcx
+		cmp rax,00
+		jnz l1
+		mov byte[cnt],cl
+		l2:
+		pop rbx
+		cmp bl,09H
+		jbe l3
+		add bl,07H
+		l3:
+		add bl,30H
+		mov byte[char],bl
+		WRITE char,01
+		dec byte[cnt]
+		jnz l2
+		jmp _start
+	exit:
+		mov rax,60
+		mov rdi,00
+		syscall
+	
+	accept:
+		mov rsi,char_buff
+		mov rbx,00H
+		up:mov rdx,00H
+		mov dl,byte[rsi]
+		cmp dl,39H
+		jbe sub30
+		sub dl,07H
+		sub30:sub dl,30H
+		shl rbx,04H
+		add rbx,rdx
+		inc rsi
+		dec rcx
+		jnz up
+		ret
+	

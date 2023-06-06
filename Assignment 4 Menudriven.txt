@@ -1,0 +1,242 @@
+%macro read 2
+mov rax,0
+mov rdi,0
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+
+%macro write 2
+mov rax,1
+mov rdi,1
+mov rsi,%1
+mov rdx,%2
+syscall
+%endmacro
+
+section .data
+menumsg db 10,"1. String length",10
+db 10,"2. String copy",10
+db 10,"3. String reverse",10
+db 10,"4. String compare",10
+db 10,"5. String concat",10
+db 10,"6. Check palindrome",10
+db 10,"7. String substring",10
+db 10,"8. Exit",10
+db 10,"Enter your choice: ",10
+
+menulen equ $-menumsg
+msg1 db "Enter String1",10
+len1 equ $-msg1
+msg2 db "Enter String2",10
+len2 equ $-msg2
+msg3 db "The length of the string is: ",10
+len3 equ $-msg3
+msg4 db "The copied String: ",10
+len4 equ $-msg4
+msg5 db "The reverse string",10
+len5 equ $-msg5
+msg6 db "String equal",10
+len6 equ $-msg6
+msg7 db "String are not equal",10
+len7 equ $-msg7
+msg8 db "String concatenated",10
+len8 equ $-msg8
+msg9 db "String Palindrome",10
+len9 equ $-msg9
+msg10 db "String not palindrome",10
+len10 equ $-msg10
+msg11 db "substring",10
+len11 equ $-msg11
+msg12 db "Not substring",10
+len12 equ $-msg12
+msg13 db "Wrong choice",10
+len13 equ $-msg13
+
+section .bss
+string1 resb 20
+string2 resb 20
+string3 resb 40
+l1 resq 1
+l2 resq 1
+l3 resq 1
+choice resb 2
+char_buff resb 16
+
+section .text
+global _start
+_start:
+write msg1,len1
+read string1,20
+dec rax
+mov[l1],rax
+write msg2,len2
+read string2,20
+dec rax
+mov[l2],rax
+
+printmenu:write menumsg,menulen
+read choice,2
+cmp byte[choice],31h
+je strlen
+cmp byte[choice],32h
+je strcpy
+cmp byte[choice],33h
+je strrev
+cmp byte[choice],34h
+je strcmp
+cmp byte[choice],35h
+je strcat
+cmp byte[choice],36h
+je strpal
+cmp byte[choice],37h
+je substr
+cmp byte[choice],38h
+je exit
+write msg13,len13
+jmp printmenu
+
+strlen: write msg3,len3
+mov rbx,[l1]
+call display
+jmp printmenu
+
+strcpy: mov rsi,string1
+mov rdi,string3
+mov rcx,[l1]
+cld
+rep movsb
+write msg4,len4
+write string3,[l1]
+jmp printmenu
+
+strrev: mov rsi,string1
+add rsi,[l1]
+dec rsi
+mov rdi,string3
+mov rcx,[l1]
+up: mov bl,byte[rsi]
+mov byte[rdi],bl
+dec rsi
+inc rdi
+dec rcx
+jnz up
+write msg5,len5
+write string3,[l1]
+jmp printmenu
+
+strcmp:mov rbx,[l1]
+cmp rbx,qword[l2]
+jne nonequal
+mov rsi,string1
+mov rdi,string2
+mov rcx,[l1]
+cld
+repe cmpsb
+jne nonequal
+write msg6,len6
+jmp printmenu
+nonequal: write msg7,len7
+jmp printmenu
+
+strcat: mov rsi,string1
+mov rdi,string3
+mov rcx,[l1]
+cld
+rep movsb
+mov rsi,string2
+mov rcx,[l2]
+rep movsb
+mov rbx,[l1]
+add rbx,[l2]
+mov[l3],rbx
+write msg8,len8
+write string3,[l3]
+jmp printmenu
+
+strpal: write msg1,len1
+read string1,20
+dec rax
+mov[l1],rax
+mov rsi,string1
+add rsi,[l1]
+dec rsi
+mov rdi,string3
+mov rcx,[l1]
+
+up1:mov dl,byte[rsi]
+mov byte[rdi],dl
+dec rsi
+inc rdi
+dec rcx
+jnz up1
+mov rsi,string1
+mov rdi,string3
+mov rcx,[l1]
+cld
+repe cmpsb
+jne notequal1
+write msg9,len9
+jmp printmenu
+
+notequal1:write msg10,len10
+jmp printmenu
+
+substr:
+write msg1,len1
+read string1,20
+dec rax
+mov[l1],rax
+write msg2,len2
+read string2,20
+dec rax
+mov[l2],rax
+mov rbx,qword[l2]
+mov rsi,string1
+mov rdi,string2
+
+up3:mov al,byte[rdi]
+cmp al,byte[rdi]
+je same
+mov rdi,string2
+mov rbx,qword[l2]
+
+same:
+inc rsi
+inc rdi
+dec rbx
+dec qword[l1]
+cmp rbx,0
+je st
+cmp qword[l1],0
+jne up3
+write msg12,len12
+jmp printmenu
+
+st: write msg11,len11
+jmp printmenu
+
+display:
+mov rsi,char_buff
+mov rcx,16
+
+up2: rol rbx,04
+mov dl,bl
+and dl,0FH
+cmp dl,09H
+jbe add30
+add dl,07H
+
+add30:
+add dl,30H
+mov byte[rsi],dl
+inc rsi
+dec rcx
+jnz up2
+write char_buff,16
+ret
+
+exit: mov rax,60
+mov rdi,00
+syscall
+
